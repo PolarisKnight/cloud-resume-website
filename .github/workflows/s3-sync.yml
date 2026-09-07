@@ -1,0 +1,56 @@
+name: 's3-sync'
+
+on:
+    push:
+        branches: ['main']
+    pull_request:
+        branches: ['main']
+
+permissions:
+    contents: read 
+    pull-requests: write 
+
+jobs:
+    aws-cli-job:
+        name: 's3-sync'
+        runs-on: ubuntu-latest
+        environment: production
+        defaults:
+            run:
+                shell: bash
+        env:
+          AWS_DEFAULT_REGION: us-west-2 
+
+        steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+
+        - name: Connect to Tailnet
+          uses: tailscale/github-action@v3
+          with:
+            oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+            oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+            tags: tag:ci
+
+        - name: Import secrets from Vault over Tailnet
+          uses: hashicorp/vault-action@v3
+          with:
+            url: https://vault.waifuprotect.org
+            method: "jwt"
+            role: "github-actions"
+            secrets: |
+              secret/data/terraform/aws AWS_ACCESS_KEY_ID | AWS_ACCESS_KEY_ID ;
+              secret/data/terraform/aws AWS_SECRET_ACCESS_KEY | AWS_SECRET_ACCESS_KEY
+
+
+# aws-actions/configure-aws-credentials@v4 not needed for current setup
+
+
+        # GH Actions Ubuntu-Latest already includes AWS CLI
+        # Sync and deletes files in Bucket that are no longer in repo
+        - name: Deploy code to S3 Bucket
+          run: |
+            aws s3 sync ./frontend s3://braydon-cloud-resume-website --delete
+            
+
+
