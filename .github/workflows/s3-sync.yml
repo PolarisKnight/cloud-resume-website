@@ -9,6 +9,7 @@ on:
 permissions:
     contents: read 
     pull-requests: write 
+    id-token: write
 
 jobs:
     aws-cli-job:
@@ -37,7 +38,7 @@ jobs:
           with:
             url: https://vault.waifuprotect.org
             method: "jwt"
-            role: "github-actions"
+            role: "github-actions-crc-website"
             secrets: |
               secret/data/terraform/aws AWS_ACCESS_KEY_ID | AWS_ACCESS_KEY_ID ;
               secret/data/terraform/aws AWS_SECRET_ACCESS_KEY | AWS_SECRET_ACCESS_KEY
